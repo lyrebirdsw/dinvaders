@@ -1,5 +1,5 @@
 //############################################
-// DInvaders. A short hack to test Dgame
+// DInvaders. A short script to test Dgame
 // author: Stewart Hore
 // File: main.d
 // Created: 2014-02-20 18:34:32
