@@ -1,7 +1,7 @@
 //############################################
 // DInvaders. A short script to test Dgame
 // author: Stewart Hore
-// File: main.d
+// File: dinvaders.d
 // Created: 2014-02-20 18:34:32
 // Modified: 2014-02-20 21:45:23
 //############################################
