@@ -1,0 +1,11 @@
+{
+	"name": "dinvaders",
+	"description": "A minimal D application.",
+	"copyright": "Copyright © 2015, stewart",
+	"authors": ["stewart"],
+    "sourcePaths":["."],
+	"dependencies": {
+        "dgame":">=0.4.1"
+	},
+    "targetType":"executable"
+}
