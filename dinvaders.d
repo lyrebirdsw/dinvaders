@@ -1,3 +1,11 @@
+//###################################################
+// File: dinvaders.d
+// Created: 2015-02-23 07:55:59
+// Modified: 2015-02-23 07:55:59
+//
+// See LICENSE file for license and copyright details
+//###################################################
+
 //############################################
 // DInvaders. A short script to test Dgame
 // author: Stewart Hore
@@ -74,7 +82,7 @@ struct Aliens {
     /// Create the aliens.
     void create()
     {
-        timeout = new Clock();
+        timeout = Clock.init;
         Image img = new Image(Aliens.image);
         ulong idx = 0;
         foreach(ii; 0..numRows) {
