@@ -140,19 +140,20 @@ struct Aliens {
     void checkCollisions(ref Bullet[2] bullets, ref Player player)
     {
         foreach(idx, alien; aliens) {
-            if(bullets[0].active && alien.collideWith(bullets[0].sprite)) {
-                destroy(idx);
-                bullets[0].active = false;
-                continue;
-            }
-            if(bullets[1].active && alien.collideWith(bullets[0].sprite)) { 
-                destroy(idx);
-                bullets[1].active = false;
-                continue;
-            }
-            if(alien.collideWith(player.player)) {// Oops, game over!
-                destroy(idx);
-                gameOn = false;
+            if(alienOn[idx]) {
+
+                if(bullets[0].active && alien.collideWith(bullets[0].sprite)) {
+                    destroy(idx);
+                    bullets[0].active = false;
+                }
+                if(bullets[1].active && alien.collideWith(bullets[1].sprite)) { 
+                    destroy(idx);
+                    bullets[1].active = false;
+                }
+                if(alien.collideWith(player.player)) {// Oops, game over!
+                    destroy(idx);
+                    gameOn = false;
+                }
             }
         }
     }
