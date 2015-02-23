@@ -1,18 +1,11 @@
 //###################################################
 // File: dinvaders.d
 // Created: 2015-02-23 07:55:59
-// Modified: 2015-02-23 07:55:59
+// Modified: 2015-02-23 14:00:08
 //
 // See LICENSE file for license and copyright details
 //###################################################
 
-//############################################
-// DInvaders. A short script to test Dgame
-// author: Stewart Hore
-// File: dinvaders.d
-// Created: 2014-02-20 18:34:32
-// Modified: 2014-02-20 21:45:23
-//############################################
 
 import std.stdio;
 
@@ -70,7 +63,7 @@ struct Aliens {
 
 
     Spritesheet[numRows*numCols] aliens;
-    bool alienOn[numRows*numCols];
+    bool[numRows*numCols] alienOn;
     Clock timeout;
     int packX = 50, packY = 50; // The top-left of the alien pack
     int packDir = 1;
