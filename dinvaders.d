@@ -1,7 +1,7 @@
 //###################################################
 // File: dinvaders.d
 // Created: 2015-02-23 07:55:59
-// Modified: 2015-02-23 14:00:08
+// Modified: 2015-02-27 08:50:16
 //
 // See LICENSE file for license and copyright details
 //###################################################
@@ -132,7 +132,7 @@ struct Aliens {
     // Check for collisions between aliens-player and aliens-bullet
     void checkCollisions(ref Bullet[2] bullets, ref Player player)
     {
-        foreach(idx, alien; aliens) {
+        foreach(int idx, alien; aliens) {
             if(alienOn[idx]) {
 
                 if(bullets[0].active && alien.collideWith(bullets[0].sprite)) {
