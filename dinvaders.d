@@ -77,7 +77,7 @@ struct Aliens {
     {
         timeout = Clock.init;
         Image img = new Image(Aliens.image);
-        ulong idx = 0;
+        int idx = 0;
         foreach(ii; 0..numRows) {
             foreach(jj; 0..numCols) {
                 aliens[idx]= new Spritesheet(img, ShortRect(0, 0, Aliens.width, Aliens.height));
@@ -109,7 +109,7 @@ struct Aliens {
             slide =true;
             timeout.reset();
         }
-        ulong idx = 0;
+        int idx = 0;
         foreach(y; 0..Aliens.numRows) {
             foreach(x; 0..Aliens.numCols) {
                 if(alienOn[idx]) {
@@ -118,14 +118,14 @@ struct Aliens {
                         aliens[idx].setPosition( x*Aliens.offsetX + packX, y*Aliens.offsetY + packY);
                     }
                     wnd.draw(aliens[idx]);
-                } 
+                }
                 ++idx;
             }
         }
     }
     // Called when an alien is destroyed. Turns off the alien sprite and
     // turns on the corresponding explosion (have none).
-    void destroy(ulong idx)
+    void destroy(int idx)
     {
         alienOn[idx] = false;
     }
@@ -139,7 +139,7 @@ struct Aliens {
                     destroy(idx);
                     bullets[0].active = false;
                 }
-                if(bullets[1].active && alien.collideWith(bullets[1].sprite)) { 
+                if(bullets[1].active && alien.collideWith(bullets[1].sprite)) {
                     destroy(idx);
                     bullets[1].active = false;
                 }
@@ -152,7 +152,7 @@ struct Aliens {
     }
 
 }
-// Manage bullets 
+// Manage bullets
 struct Bullet {
     static immutable int width = 17, height = 40;
     static immutable string image = "./player_bullet.png";
