@@ -9,27 +9,25 @@
 
 import std.stdio;
 
-//import Dgame.Window.all;
-//import Dgame.Graphics.all;
-//import Dgame.System.Clock;
-
 import Dgame.Window;
 import Dgame.Graphic;
 import Dgame.System.StopWatch;
 import Dgame.System.Keyboard;
-//import Dgame.Math.Vector2;
 import Dgame.Math.Rect;
 import Dgame.Math;
 
 // globals are cool!
 immutable int windowWidth = 1024, windowHeight = 768;
 immutable int FPS = 30;
-immutable ubyte TICKS_PER_FRAME = 1000 / FPS; //test
-immutable int testMode = 0;
-StopWatch sw;//test
+immutable ubyte TICKS_PER_FRAME = 1000 / FPS; 
 
-bool gameOn = false;
-bool winOn = false;
+StopWatch timer;
+
+//bool gameOn = false;
+//bool running = false;
+enum State {PENDING, INPROGRESS, WIN, LOST, ABORT, QUIT};
+auto running = State.PENDING;
+
 // Manage the player
 struct Player {
     static immutable int width = 77, height = 80;    
@@ -37,50 +35,40 @@ struct Player {
     static immutable int startX =windowWidth / 2-Player.width/2, startY = 650;
     Texture img;//get it from local create context
     Sprite player;
-    Shape circle;
+
     int moveDir = 0;
     void create()
-    {
-        //Image img = new Image(Player.image);//textura and surface
-        
-        img = Texture(Surface(Player.image));
-        
+    {      
+        img = Texture(Surface(Player.image));        
         player = new Sprite(img);
-        //player.setPosition(Player.startX, Player.startY); // Sprite.setPosition
         player.setPosition(Player.startX, Player.startY);
 
-        circle = new Shape(25, Vector2f(180, 380));
-        circle.setColor(Color4b.Green);    
-        
+       
     }
     // Called once per frame
     void update(ref Window wnd)
     {
-        //if(player.position.x < 5 && moveDir < 0) {  //getPosition
         if(player.getPosition.x < 5 && moveDir < 0) {
             moveDir = 0;
         } else if(player.getPosition.x > windowWidth-Player.width-5 && moveDir > 0) {
             moveDir = 0;
         }
-        
-        //player.move(moveDir, 0);
-        
-        //some fansy movements, and seems it does not affect anything
-        if (moveDir > 0) {
+        player.move(moveDir, 0);
+
+        //some fansy movements, smoother and need more moveDir
+/*        if (moveDir > 0) {
             player.move(1, 0);
             moveDir -= 1;
         } else if (moveDir < 0) {
             player.move(-1,0);
             moveDir += 1;
         }
+ */       
         wnd.draw(player);    
-        wnd.draw(circle);
+        
     }
     void fireBullet(ref Bullet bullet)
     {
-        //bullet.sprite.position.x = player.position.x + Player.width / 2;
-        //bullet.sprite.position.y = player.position.y;
-
         bullet.sprite.setPosition(player.getPosition.x + Player.width / 2, player.getPosition.y);
         
         bullet.moveDir = -10;
@@ -98,7 +86,6 @@ struct Aliens {
     static immutable int offsetY = Aliens.height + 5;
     static immutable int moveX = 10;
 
-
     Spritesheet[numRows*numCols] aliens;
     bool[numRows*numCols] alienOn;
     int alienCount = numRows*numCols;
@@ -109,17 +96,17 @@ struct Aliens {
     // the number of frames before an update and changes to increase
     // the speed.
     int updateLatch = 250;
-    Texture img;//same
+    
+    Texture img;
+    
     /// Create the aliens.
     void create()
     {
         timeout = StopWatch.init;
-        //Image img = new Image(Aliens.image);
         img =  Texture(Surface(Aliens.image));
         int idx = 0;
         foreach(ii; 0..numRows) {
             foreach(jj; 0..numCols) {
-                //aliens[idx]= new Spritesheet(img, ShortRect(0, 0, Aliens.width, Aliens.height));  // Rect
                 aliens[idx]= new Spritesheet(img, Rect(0, 0, Aliens.width, Aliens.height));
                 int x = jj * Aliens.offsetX + 50;
                 int y = ii * Aliens.offsetY + 50;
@@ -133,7 +120,8 @@ struct Aliens {
     void update(ref Window wnd)
     {
         bool slide = false;
-        if(gameOn && timeout.getElapsedTicks() > updateLatch) {
+        //if(gameOn && timeout.getElapsedTicks() > updateLatch) {
+        if(running==State.INPROGRESS && timeout.getElapsedTicks() > updateLatch) {
             // Shuffle along...
             packX += moveX*packDir;
 
@@ -142,7 +130,10 @@ struct Aliens {
             if(packX > 450 || packX < 50) {
                 packDir *= -1;
                 packY += (Aliens.height + 5);
-                if(packY > 400) { // well, game over           
+                writeln(packY);
+                //if(packY > 400) { // well, game over           
+                if (packY > windowHeight) { /// puppies go down, reset them
+                    packY = 0;
                 }
                 updateLatch /= 2;
             }
@@ -168,29 +159,25 @@ struct Aliens {
     void destroy(int idx)
     {
         alienOn[idx] = false;
-        writeln("Aliens left:", --alienCount);
+        writeln("Aliens left:", --alienCount); // just curious
+        if (alienCount<=0) running = State.WIN;
     }
     // Check for collisions between aliens-player and aliens-bullet
     void checkCollisions(ref Bullet[2] bullets, ref Player player)
     {
         foreach(int idx, alien; aliens) {
             if(alienOn[idx]) {
-
-                //if(bullets[0].active && alien.collideWith(bullets[0].sprite)) {
                 if(bullets[0].active && alien.getClipRect.intersects(bullets[0].sprite.getClipRect, null)) {
                     destroy(idx);
                     bullets[0].active = false;
-                    //writeln("hit 0 ", "alien ", idx);
                 }
-                //if(bullets[1].active && alien.collideWith(bullets[1].sprite)) {
                 if(bullets[1].active && alien.getClipRect.intersects(bullets[1].sprite.getClipRect, null)) {
                     destroy(idx);
                     bullets[1].active = false;
-                    //writeln("hit 0 ", "alien ", idx);
                 }
-                //if(alien.collideWith(player.player)) {// Oops, game over!
                 if(alien.getClipRect.intersects(player.player.getClipRect, null)) {// Oops, game over!
-                    gameOn = false;
+                    //gameOn = false;
+                    running = State.LOST;
                 }
             }
         }
@@ -201,317 +188,199 @@ struct Aliens {
 struct Bullet {
     static immutable int width = 17, height = 40;
     static immutable string image = "./player_bullet.png";
-    Texture img;//same
+    Texture img;
     Sprite sprite;
     int moveDir = 0;
     bool active = false;
     void create()
     {
-        //Image img = new Image(Bullet.image);
         img =  Texture(Surface(Bullet.image));
         sprite = new Sprite(img);
-        //writeln(sprite.getPosition());//marks
     }
     void update(ref Window wnd)
     {
         if(active) {
             sprite.move(0, moveDir);
             wnd.draw(sprite);
-            //if(sprite.position.y < 5) {
             if(sprite.getPosition.y < 5) {
                 active = false;
             }
         }
     }
 }
-// Kickstart
-void main0()
-{
-    //Window wnd = new Window(VideoMode(windowWidth, windowHeight), "D-Invaders");
-    Window wnd =  Window(windowWidth, windowHeight, "D-Invaders");
-    //wnd.setVerticalSync(Window.Sync.Disable);
-    wnd.setVerticalSync(Window.VerticalSync.Disable);
-    //wnd.setFramerateLimit(FPS);
-//    wnd.setClearColor(Color.Black); /// Default would be Color.White
-    wnd.setClearColor(Color4b.Black); /// Default would be Color.White
-    wnd.clear(); /// Clear the buffer and fill it with the clear Color
-    wnd.display();
-
-    auto aliens = Aliens();
-    auto player = Player();
-    // Setup our aliens.
-    aliens.create();
-    player.create();
-    Bullet[2] bullets;
-    bullets[0].create();
-    bullets[1].create();
-
-    gameOn = true;
-    winOn = true;// test
-    // Start the event loop
-    Event event;
-//    while(wnd.isOpen()) {
-    while(winOn) { // test
-        if(gameOn) {
-            wnd.clear();
-            //while(EventHandler.poll(&event)) {
-            while(wnd.poll(&event)) {
-                switch(event.type) {
-                    case Event.Type.Quit : {
-                        //wnd.close();
-                        winOn = false;//test
-                        break;
-                    }
-                    case Event.Type.KeyDown : {  
-                        switch(event.keyboard.key) {
-                            //case Keyboard.Code.Esc: {
-                            case Keyboard.Key.Esc: {
-                                //EventHandler.push(Event.Type.Quit);
-                                wnd.push(Event.Type.Quit);
-                                break;
-                            }
-                            //case Keyboard.Code.Left: {
-                            case Keyboard.Key.Left: {
-                                player.moveDir = -25;
-                                break;
-                            }
-                            //case Keyboard.Code.Right: {
-                            case Keyboard.Key.Right: {
-                                player.moveDir = 25;
-                                break;
-                            }
-                            //case Keyboard.Code.Space: {
-                            case Keyboard.Key.Space: {
-                                // Do we have a bullet to fire?
-                                //writefln(" do we have a bullet to fire? bullet0:%s, bullet1:%s ",!bullets[0].active,!bullets[1].active);
-                                if(!bullets[0].active) {
-                                    //writeln("fire bullet 0");
-                                    player.fireBullet(bullets[0]);                                    
-                                } else if(!bullets[1].active) {
-                                    //writeln("fire bullet 1");
-                                    player.fireBullet(bullets[1]);                                    
-                                }
-                                break;
-                            }
-                            default :
-                                break;
-                        }
-                        default :
-                            break;
-                    }
-                }
-            //sw.reset();
-            }
-        
-
-            // Update the aliens
-            aliens.update(wnd);
-            player.update( wnd);
-            if(bullets[0].active) {
-                bullets[0].update(wnd); // these only draw if active
-                //writeln("bullet0 position! ", bullets[0].sprite.getPosition());
-            }
-            if(bullets[1].active) {
-                bullets[1].update(wnd);
-                //writeln("bullet1 position! ", bullets[0].sprite.getPosition());
-            }
-            aliens.checkCollisions(bullets, player);
-
-            wnd.display();
-        } else { // Too bad, game over
-            //wnd.setClearColor(Color.Red);
-            wnd.setClearColor(Color4b.Red);
-            wnd.clear();
-            wnd.display();
-            StopWatch.wait(1000);
-            //wnd.close();
-            winOn = false;//test
+// Background space
+struct BackSpace {
+    static immutable int sizeSol = 25;
+    static immutable int startXSol = 180, startYSol = 380;
+    
+    StopWatch timeout;
+    
+    Sol sun1;    
+    Sol sun2;
+    
+        void create()
+        {
+            sun1.create(25, 180, 380, -1);
+            sun2.create(50, 800, 1500, -2);
         }
+        void update(ref Window wnd)
+        {
+            sun1.update(wnd);
+            sun2.update(wnd);
+        }        
+    // Solar
+    struct Sol {  
+        int movDir;
         
+        Shape circle;
         
+        void create(in int size,in int startX, in int startY, in int shift)
+        {
+            movDir = shift;
+            
+            circle = new Shape(size, Vector2f(startX, startY));
+            circle.setColor(Color4b.Green);         
+        }
+        void update(ref Window wnd)
+        {               
+            circle.move(0,movDir);
+
+            wnd.draw(circle); ///love that circle. looks like some green star     
+        }
     }
 }
-
-
-
-
-// Tests
-void main1() {
-    writeln("testing");
-    
-    
-    //Window wnd = new Window(VideoMode(windowWidth, windowHeight), "D-Invaders");
-    Window wnd =  Window(windowWidth, windowHeight, "D-Invaders");
-    //wnd.setVerticalSync(Window.Sync.Disable);
-    wnd.setVerticalSync(Window.VerticalSync.Disable);
-    //wnd.setFramerateLimit(FPS);
-//    wnd.setClearColor(Color.Black); /// Default would be Color.White
-    wnd.setClearColor(Color4b.Black); /// Default would be Color.White
-    wnd.clear(); /// Clear the buffer and fill it with the clear Color
-    wnd.display();
-
-    //auto aliens = Aliens();
-    Player playerP;
-    // Setup our aliens.
-    //aliens.create();
-    playerP.create();
-    //Bullet[2] bullets;
-    //bullets[0].create();
-    //bullets[1].create();
-
-    int width = 77, height = 80;
-    string image = "./player.png";
-    int startX =windowWidth / 2-Player.width/2, startY = 650;
-    Sprite player;    
-    Texture img =  Texture(Surface(image));        
-    player = new Sprite(img);
-    player.setPosition(Player.startX, Player.startY);    
-    
-   
-    gameOn = false;
-    winOn = false;// test
-    // Start the event loop
-    Event event;
-//    while(wnd.isOpen()) {
-    while(winOn) { // test
-        if(gameOn) {
-            wnd.clear();
-            /*
-            while(wnd.poll(&event)) {
-                switch(event.type) {
-                    case Event.Type.Quit : {
-                        //wnd.close();
-                        winOn = false;//test
-                        break;
-                    }
-                    case Event.Type.KeyDown : {
-                        
-                        switch(event.keyboard.key) {
-                            //case Keyboard.Code.Esc: {
-                            case Keyboard.Key.Esc: {
-                                //EventHandler.push(Event.Type.Quit);
-                                wnd.push(Event.Type.Quit);
-                                break;
-                            }
-                            //case Keyboard.Code.Left: {
-                            case Keyboard.Key.Left: {
-                                player.moveDir = -5;
-                                break;
-                            }
-                            //case Keyboard.Code.Right: {
-                            case Keyboard.Key.Right: {
-                                player.moveDir = 5;
-                                break;
-                            }
-                            //case Keyboard.Code.Space: {
-                            case Keyboard.Key.Space: {
-                                writeln("[0] ",bullets[0].active);
-                                // Do we have a bullet to fire?
-                                writefln(" do we have a bullet to fire? bullet0:%s, bullet1:%s ",
-                                                    !bullets[0].active,!bullets[1].active);
-                                if(!bullets[0].active) {
-                                    writeln("fire bullet 0");
-                                    player.fireBullet(bullets[0]);                                    
-                                } else if(!bullets[1].active) {
-                                    writeln("fire bullet 1");
-                                    player.fireBullet(bullets[1]);                                    
-                                }
-                                break;
-                            }
-                            default :
-                                break;
-                        }
-                        default :
-                            break;
-                    }
-                }
-            }
-            
-//            player.update( wnd);
-            
-            if(bullets[0].active) {
-                bullets[0].update(wnd); // these only draw if active
-                //writeln("bullet0 position! ", bullets[0].sprite.getPosition());
-            }
-            if(bullets[1].active) {
-                bullets[1].update(wnd);
-                //writeln("bullet1 position! ", bullets[0].sprite.getPosition());
-            }
-            aliens.checkCollisions(bullets, player);
-            */    
-            
-            wnd.draw(player);
-            wnd.display();
-        } else { // Too bad, game over
-            //wnd.setClearColor(Color.Red);
-            wnd.setClearColor(Color4b.Red);
-            wnd.clear();
-            wnd.display();
-            StopWatch.wait(1000);
-            //wnd.close();
-            winOn = false;//test
-        }
-        
-        
-    }
-    
-
-    
-
-/*
-    for(int i; i<30_000; ++i){
-        wnd.clear();      
-        if (i%10_000==0) {writeln(i);}
-        player.move((i%41-20), 0);  
-        wnd.draw(player);
-        wnd.display();
-    }
-    
-    for(int i; i<30_000; ++i){   
-        wnd.clear();    
-        if (i%10_000==0) {writeln(i);}
-        player.move(0, 0);
-        wnd.draw(player);
-        wnd.display();
-    }
-*/   
-      for(int i; i<30_001; ++i){   
-        wnd.clear();    
-        if (i%10_000==0) {writeln(i);}
-        playerP.moveDir = i % 41 - 20;
-        playerP.update( wnd);
-        
-        wnd.display();
-    }
-   
-      
-    
-    wnd.display();
-    
-    StopWatch.wait(1000);
-    
-    }
-    
-
-
-
-
-
-
-
+// Kickstart
 void main()
 {
+    Window wnd =  Window(windowWidth, windowHeight, "D-Invaders");
+    wnd.setVerticalSync(Window.VerticalSync.Disable);
 
-    switch (testMode){
-        case 0 : {    
-            main0();
-            break;
-        }
-        case 1 : {
-            main1();
-            break;
-            }
-        default : break;
+    StopWatch FPSclock;///  FPS control  
+    
+    auto aliens = Aliens();
+    auto player = Player();
+    auto background = BackSpace();
+    Bullet[2] bullets;
+    
+    // Setup our aliens.   
+    void level0() {
+        wnd.setClearColor(Color4b.Black); /// Default would be Color.White
+        wnd.clear(); /// Clear the buffer and fill it with the clear Color
+        wnd.display();
+
+        aliens = Aliens();
+        player = Player();
+        background = BackSpace();
+        bullets[0] = Bullet();
+        bullets[1] = Bullet();
+        
+        aliens.create();
+        player.create();
+        background.create();
+        
+        bullets[0].create();
+        bullets[1].create();
+        running = State.INPROGRESS;   
+        
+        player.moveDir = 0;
     }
-
+    
+    //gameOn = true;
+    level0();
+    // Start the event loop
+    Event event;
+    while(running!=State.QUIT) { 
+        switch (running) {
+            case State.INPROGRESS : {    
+            //if(gameOn) {
+                if (FPSclock.getElapsedTicks() >= TICKS_PER_FRAME) {
+                    wnd.clear();
+                    while(wnd.poll(&event)) {
+                        switch(event.type) {
+                            case Event.Type.Quit : {                            
+                                running = State.QUIT;// quit event loop
+                                break;
+                            }
+                            case Event.Type.KeyDown : {  
+                                switch(event.keyboard.key) {
+                                    case Keyboard.Key.Esc: {
+                                        wnd.push(Event.Type.Quit);
+                                        break;
+                                    }
+                                    case Keyboard.Key.Left: {
+                                        player.moveDir = -5;
+                                        break;
+                                    }
+                                    case Keyboard.Key.Right: {
+                                        player.moveDir = 5;
+                                        break;
+                                    }
+                                    case Keyboard.Key.L: {
+                                        running = State.LOST;
+                                        break;
+                                    }
+                                    case Keyboard.Key.W: {
+                                        running = State.WIN;
+                                        break;
+                                    }                                    
+                                    case Keyboard.Key.Space: {
+                                        // Do we have a bullet to fire?
+                                        if(!bullets[0].active) {
+                                            player.fireBullet(bullets[0]);                                    
+                                        } else if(!bullets[1].active) {
+                                            player.fireBullet(bullets[1]);                                    
+                                        }
+                                        break;
+                                    }
+                                    default :
+                                        break;
+                                }
+                                default :
+                                    break;
+                            }
+                        }
+                    }
+                    // Update the aliens
+                    background.update(wnd);
+                    aliens.update(wnd);
+                    player.update( wnd);
+                    if(bullets[0].active) {
+                        bullets[0].update(wnd); // these only draw if active
+                    }
+                    if(bullets[1].active) {
+                        bullets[1].update(wnd);
+                   }
+                    aliens.checkCollisions(bullets, player);
+                    wnd.display();
+                    FPSclock.reset();     
+                } 
+                break;        
+            }    
+            //} else { // Too bad, game over
+            case State.LOST : {
+                wnd.setClearColor(Color4b.Red);
+                wnd.clear();
+                wnd.display();
+                StopWatch.wait(1000);
+                //running = State.QUIT;// quit event loop
+                running = State.PENDING;
+                break;
+            }
+            case State.WIN : {
+                wnd.setClearColor(Color4b.Green);
+                wnd.clear();
+                wnd.display();
+                StopWatch.wait(1000);
+                running = State.PENDING;                
+                break;
+            }               
+            case State.PENDING : {
+                level0();                
+                break;
+            }            
+            default : {
+                break;
+            }
+        }
+    }    
 }
